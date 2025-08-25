@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/network_settings.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({super.key});
@@ -13,7 +15,8 @@ class ControlScreen extends StatefulWidget {
 class _ControlScreenState extends State<ControlScreen> {
   double _wheelsAngle = 50;
   double _speed = 0;
-  bool year2023 = true;
+  DateTime _lastAngleUpdate = DateTime.now();
+  DateTime _lastSpeedUpdate = DateTime.now();
 
   @override
   void initState() {
@@ -35,6 +38,40 @@ class _ControlScreenState extends State<ControlScreen> {
       DeviceOrientation.landscapeRight,
     ]);
     super.dispose();
+  }
+
+  Future<void> _sendSpeed(String ipAddress) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$ipAddress/setSpeed'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'speed': _speed.toInt()}),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('Failed to send speed: ${response.statusCode}');
+      }
+
+    } catch (e) {
+      debugPrint('Error sending speed: $e');
+    }
+  }
+
+  Future<void> _sendAngle(String ipAddress) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://$ipAddress/setAngle'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'angle': _wheelsAngle.toInt()}),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('Failed to send wheel angle: ${response.statusCode}');
+      }
+
+    } catch (e) {
+      debugPrint('Error sending angle: $e');
+    }
   }
 
   @override
@@ -66,6 +103,15 @@ class _ControlScreenState extends State<ControlScreen> {
                         setState(() {
                           _speed = value;
                         });
+
+                        final now = DateTime.now();
+                        if (now.difference(_lastSpeedUpdate).inMilliseconds > 100) {
+                          _lastSpeedUpdate = now;
+                          _sendSpeed(networkSettings.ipAddress);
+                        }
+                      },
+                      onChangeEnd: (double value) {
+                        _sendSpeed(networkSettings.ipAddress);
                       },
                     ),
                   ),
@@ -91,11 +137,22 @@ class _ControlScreenState extends State<ControlScreen> {
                 const SizedBox(height: 10),
                 Slider(
                   value: _wheelsAngle,
+                  min: -100,
                   max: 100,
                   onChanged: (double value) {
                     setState(() {
                       _wheelsAngle = value;
                     });
+
+                    final now = DateTime.now();
+                    if (now.difference(_lastAngleUpdate).inMilliseconds > 100) {
+                      _lastAngleUpdate = now;
+                      _sendAngle(networkSettings.ipAddress);
+                    }
+                  },
+
+                  onChangeEnd: (double value) {
+                    _sendAngle(networkSettings.ipAddress);
                   },
                 ),
                 Text('${_wheelsAngle.toInt()}°', style: const TextStyle(fontSize: 16)),
