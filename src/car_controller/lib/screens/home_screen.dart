@@ -13,16 +13,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _ipController = TextEditingController();
+  final _ipController = TextEditingController(text: '192.168.4.1'); // Set default value here
   final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    // Initialize text controller with current IP address
+    // Initialize text controller with current IP address from provider
+    // This will override the default if a saved value exists
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final networkSettings = Provider.of<NetworkSettings>(context, listen: false);
-      _ipController.text = networkSettings.ipAddress;
+      if (networkSettings.ipAddress.isNotEmpty) {
+        _ipController.text = networkSettings.ipAddress;
+      }
     });
   }
 
@@ -54,7 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
               TextFormField(
                 controller: _ipController,
                 decoration: const InputDecoration(
-                  hintText: 'e.g., 192.168.1.100',
+                  // Remove prefixText and use hint text instead if needed
+                  hintText: 'Enter IP address',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
@@ -63,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     return 'Please enter an IP address';
                   }
                   
-                  // Simple IP validation - you might want more sophisticated validation
                   final ipRegex = RegExp(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$');
                   if (!ipRegex.hasMatch(value)) {
                     return 'Please enter a valid IP address';
@@ -82,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       networkSettings.setIpAddress(_ipController.text);
                       
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('IP Address saved')),
+                        const SnackBar(content: Text('Connected!')),
                       );
                       
                       // Navigate to the control screen
@@ -92,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }
                   },
-                  child: const Text('Save IP Address'),
+                  child: const Text('Connect'),
                 ),
               ),
             ],
