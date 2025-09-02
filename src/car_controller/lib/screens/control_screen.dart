@@ -43,7 +43,7 @@ class _ControlScreenState extends State<ControlScreen> {
   Future<void> _sendSpeed(String ipAddress) async {
     try {
       final response = await http.get(
-        Uri.parse('http://$ipAddress/setSpeed/${_speed.toInt()}'),
+        Uri.parse('http://$ipAddress/setSpeed?speed=${_speed.toInt()}'),
       );
 
       if (response.statusCode != 200) {
@@ -58,7 +58,7 @@ class _ControlScreenState extends State<ControlScreen> {
   Future<void> _sendAngle(String ipAddress) async {
     try {
       final response = await http.get(
-        Uri.parse('http://$ipAddress/setAngle/${_wheelsAngle.toInt()}'),
+        Uri.parse('http://$ipAddress/setAngle?angle=${_wheelsAngle.toInt()}'),
       );
 
       if (response.statusCode != 200) {
@@ -120,6 +120,12 @@ class _ControlScreenState extends State<ControlScreen> {
                           },
                           onChangeEnd: (double value) {
                             _sendSpeed(networkSettings.ipAddress);
+
+                            setState(() {
+                              _speed = 0;
+                            });
+
+                            _sendSpeed(networkSettings.ipAddress);
                           },
                         ),
                       ),
@@ -178,6 +184,12 @@ class _ControlScreenState extends State<ControlScreen> {
                         }
                       },
                       onChangeEnd: (double value) {
+                        _sendAngle(networkSettings.ipAddress);
+
+                        setState(() {
+                          _wheelsAngle = 0;
+                        });
+
                         _sendAngle(networkSettings.ipAddress);
                       },
                     ),
